@@ -1,17 +1,22 @@
 # 系统调用
 WIndows平台下R3（用户态）切换到R0（内核态）系统调用 由一条CPU指令完成：syscall
 系统调用主要分为3种形式：
+
 -Int 2EH 
+
 -x86的 sysenter  (sysenter/sysexit 一对配套指令用于快速在R3和R0之间转换的指令）
+
 -x64的 syscall   (syscall/sysret 一对配套指令用于快速在R3和R0之间转换的指令)
 
 -----------------------------------------------------------------------------
 
 ## syscall基本流程：
 
-1>将RIP保存到RCX
-2>
+1->将RIP保存到RCX并IA32_LSTAR值赋予RIP
 
+2->RFLAGS保存到R11当中,处理器在RFLAGS中清除与IA32_FMASK MSR中设置的位对应的每个位
+
+3->设置CS段的RPL位为0 强制平坦
 
 伪码（来自Intel手册Vol. 2B 4-689）
 
