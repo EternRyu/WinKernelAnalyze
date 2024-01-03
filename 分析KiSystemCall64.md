@@ -296,15 +296,13 @@ struct _KPRCB
 
 #### 原文介绍(RIP-Relative Addressing For Intel Vol. 2A 2-12)
 
-<div class="center">
 
 |Legacy Prefixes|REX Prefix|Opcode|ModR/M|SIB|Displacement|Immediate|
 |:----:|:----:|:----:|:----:|:----:|:----:|:----:|
 |Grp 1, Grp 2  Grp 3, Grp 4 (optional)|(optional)|1-,2-,or 3-byte opcode|1 byte (if required)|1 byte (if required)|Addres displacement of 1, 2, or 4 bytes|Immediate data of 1, 2, or 4 bytes or none|
 
-</div>
 
-<table>
+<table width="100">
     <tr>
         <td>Legacy<br>Prefixes</td> 
         <td>REX<br>Prefix</td> 
