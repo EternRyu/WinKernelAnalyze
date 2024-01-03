@@ -285,20 +285,22 @@ struct _KPRCB
 </code></pre>
 </details>
 
-|Legacy<br>Prefixes|REX<br>Prefix|Opcode|ModR/M|SIB|Displacement|Immediate|
-|----|----|----|----|----|----|----|
-|Grp 1, Grp 2<br> Grp 3, Grp 4<br>(optional)|(optional)|1-,2-,or<br>3-byte<br>opcode|1 byte<br>(if required)|1 byte<br>(if required)|Address<br>displacement of<br>1, 2, or 4 bytes|Immediate data<br>of 1, 2, or 4<br>bytes or none|
+
 
 <details>
 <summary>RIP相对寻址(Rip_Relative_Addressing)</summary>
-<pre><code>
+<pre>
 ==============================================================
 
 
 
 #### 原文介绍(RIP-Relative Addressing For Intel Vol. 2A 2-12)
 
+|Legacy<br>Prefixes|REX<br>Prefix|Opcode|ModR/M|SIB|Displacement|Immediate|
+|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+|Grp 1, Grp 2<br> Grp 3, Grp 4<br>(optional)|(optional)|1-,2-,or<br>3-byte<br>opcode|1 byte<br>(if required)|1 byte<br>(if required)|Address<br>displacement of<br>1, 2, or 4 bytes|Immediate data<br>of 1, 2, or 4<br>bytes or none|
 
+<code>
 ~~~~
 [2.2.1.5 Immediates] 
 In 64-bit mode, the instruction’s default operation size is 32 bits. Use of the REX.R prefix permits access to additional
