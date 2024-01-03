@@ -289,7 +289,7 @@ struct _KPRCB
 
 <details>
 <summary>RIP相对寻址(Rip_Relative_Addressing)</summary>
-<pre><code>
+<pre>
 
 
 ==============================================================
@@ -302,7 +302,7 @@ struct _KPRCB
 |Grp 1, Grp 2  Grp 3, Grp 4 (optional)|(optional)|1-,2-,or 3-byte opcode|1 byte (if required)|1 byte (if required)|Addres displacement of 1, 2, or 4 bytes|Immediate data of 1, 2, or 4 bytes or none|
 
 
-<table width="100">
+<table>
     <tr>
         <td>Legacy<br>Prefixes</td> 
         <td>REX<br>Prefix</td> 
@@ -322,7 +322,7 @@ struct _KPRCB
         <td>Immediate data<br>of 1, 2, or 4<br>bytes or none</td>
     </tr>
 </table>
-
+<code>
 ~~~~
 [2.2.1.5 Immediates] 
 In 64-bit mode, the instruction’s default operation size is 32 bits. Use of the REX.R prefix permits access to additional
