@@ -299,7 +299,7 @@ struct _KPRCB
 <div class="center">
 
 |Legacy<br>Prefixes|REX<br>Prefix|Opcode|ModR/M|SIB|Displacement|Immediate|
-|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+
 |Grp 1, Grp 2<br> Grp 3, Grp 4<br>(optional)|(optional)|1-,2-,or<br>3-byte<br>opcode|1 byte<br>(if required)|1 byte<br>(if required)|Address<br>displacement of<br>1, 2, or 4 bytes|Immediate data<br>of 1, 2, or 4<br>bytes or none|
 
 </div>
