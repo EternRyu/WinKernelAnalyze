@@ -290,7 +290,7 @@ struct _KPRCB
 <details>
 <summary>RIP相对寻址(Rip_Relative_Addressing)</summary>
 <pre>
-==============================================================
+
 
 
 
@@ -300,6 +300,7 @@ struct _KPRCB
 |:----:|:----:|:----:|:----:|:----:|:----:|:----:|
 |Grp 1, Grp 2<br> Grp 3, Grp 4<br>(optional)|(optional)|1-,2-,or<br>3-byte<br>opcode|1 byte<br>(if required)|1 byte<br>(if required)|Address<br>displacement of<br>1, 2, or 4 bytes|Immediate data<br>of 1, 2, or 4<br>bytes or none|
 
+==============================================================
 <code>
 ~~~~
 [2.2.1.5 Immediates] 
