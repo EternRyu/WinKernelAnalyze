@@ -296,46 +296,54 @@ struct _KPRCB
 
 #### 原文介绍(RIP-Relative Addressing For Intel Vol. 2A 2-12)
 
+>Figure 2-3. Prefix Ordering in 64-bit Mode 汇编指令构成
 
 |Legacy<br>Prefixes|REX<br>Prefix|Opcode|ModR/M|SIB|Displacement|Immediate|
 |:----:|:----:|:----:|:----:|:----:|:----:|:----:|
 |Grp 1, Grp 2<br>Grp 3, Grp 4<br>(optional)|(optional)|1-,2-,<br>or 3-byte<br>opcode|1 byte<br>(if required)|1 byte<br>(if required)|Addres<br>displacement of<br>1, 2, or 4 bytes|Immediate data<br>of 1, 2, or 4<br>bytes or none|
+---
+>Table 2-4. REX Prefix Fields [BITS: 0100WRXB]
 
+|Field Name|Bit Position|Definition|
+|:-:|:-:|:-|
+|-|7:4|0100|
+|W|3|0 = Operand size determined by CS.D<br>1 = 64 Bit Operand Size|
+|R|2|Extension of the ModR/M reg field|
+|X|1|Extension of the SIB index field|
+|B|0|Extension of the ModR/M r/m field, SIB base field, or Opcode reg field|
+---
 
-<table>
-    <tr>
-        <td>Legacy<br>Prefixes</td> 
-        <td>REX<br>Prefix</td> 
-        <td>Opcode</td>
-        <td>ModR/M</td> 
-        <td>SIB</td> 
-        <td>Displacement</td> 
-        <td>Immediate</td> 
-   </tr>
-    <tr>
-  		<td>Grp 1, Grp 2<br> Grp 3, Grp 4<br>(optional)</td> 
-        <td>(optional)</td> 
-        <td>1-,2-,or<br>3-byte<br>opcode</td>
-        <td>1 byte<br>(if required)</td> 
-        <td>1 byte<br>(if required)</td>
-        <td>Address<br>displacement of<br>1, 2, or 4 bytes</td>
-        <td>Immediate data<br>of 1, 2, or 4<br>bytes or none</td>
-    </tr>
-</table>
+![Alt text](image.png)<br>
+![Alt text](image-1.png)
+
+---
+>Table 2-7. RIP-Relative Addressing
+
+![Alt text](image-2.png)
+
 <pre><code>
-
 ~~~~
 [2.2.1.5 Immediates] 
 In 64-bit mode, the instruction’s default operation size is 32 bits. Use of the REX.R prefix permits access to additional
 registers (R8-R15). Use of the REX.W prefix promotes operation to 64 bits. See the summary chart at the
 beginning of this section for encoding data and limits.
 
-在64位下仍使用32位操作数，REX.R扩展寄存器，REX.W扩展指令。
+在64位下仍使用32位操作数，REX.R扩展寄存器，REX.W扩展指令。RIP是64位的新特性，在64位下，指令使用特定的Mod\rm来使用RIP，RIP的偏移是32位故寻址范围为上下2GB。RIP的计算时相对于当前指令的下一条指令的地址来计算的，既目标地址=下一条指令地址+偏移。RIP中ModR\M不取决于指令前缀，比如指令前缀与R\M指定了R13寄存器，但mod是00，指令仍然使用RIP而不是r13寄存器。
 
 ~~~~
+</code></pre>
+
+> .text:000000014040F274 4C 8D 15 45 26 9F 00          lea     r10, KeServiceDescriptorTable   ; 非GUI线程使用 SSDT Offset<br>
+> .text:000000014040F27B 4C 8D 1D BE D7 8E 00          lea     r11, KeServiceDescriptorTableShadow ; GUI线程使用 SSDTShadow<br>
+>
+>以原始指令[4C 8D 15 45 26 9F 00]为例：<br>
+>4C是REX Prefix二进制是[0100 1100]
+
+
+
 
 ==============================================================
-</code></pre>
+
 </details>
 
 
