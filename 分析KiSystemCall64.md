@@ -313,13 +313,13 @@ struct _KPRCB
 |B|0|Extension of the ModR/M r/m field, SIB base field, or Opcode reg field|
 ---
 
-![Alt text](image.png)<br>
-![Alt text](image-1.png)
+![Alt text](ImageFile\image.png)<br>
+![Alt text](ImageFile\image-1.png)
 
 ---
 >Table 2-7. RIP-Relative Addressing
 
-![Alt text](image-2.png)
+![Alt text](ImageFile\image-2.png)
 
 <pre><code>
 ~~~~
