@@ -328,7 +328,7 @@ In 64-bit mode, the instruction’s default operation size is 32 bits. Use of th
 registers (R8-R15). Use of the REX.W prefix promotes operation to 64 bits. See the summary chart at the
 beginning of this section for encoding data and limits.
 
-在64位下仍使用32位操作数，REX.R扩展寄存器，REX.W扩展指令。RIP是64位的新特性，在64位下，指令使用特定的Mod\rm来使用RIP，RIP的偏移是32位故寻址范围为上下2GB。RIP的计算时相对于当前指令的下一条指令的地址来计算的，既目标地址=下一条指令地址+偏移。RIP中ModR\M不取决于指令前缀，比如指令前缀与R\M指定了R13寄存器，但mod是00，指令仍然使用RIP而不是r13寄存器。
+在64位下仍使用32位操作数，REX.R扩展寄存器，REX.W扩展指令。<br>RIP是64位的新特性，在64位下，指令使用特定的Mod\rm来使用RIP，RIP的偏移是32位故寻址范围为上下2GB。<br>RIP的计算时相对于当前指令的下一条指令的地址来计算的，既目标地址=下一条指令地址+偏移。<br>RIP中ModR\M不取决于指令前缀，比如指令前缀与R\M指定了R13寄存器，但mod是00，指令仍然使用RIP而不是r13寄存器。
 
 ~~~~
 </code></pre>
@@ -337,8 +337,13 @@ beginning of this section for encoding data and limits.
 > .text:000000014040F27B 4C 8D 1D BE D7 8E 00          lea     r11, KeServiceDescriptorTableShadow ; GUI线程使用 SSDTShadow<br>
 >
 >以原始指令[4C 8D 15 45 26 9F 00]为例：<br>
->4C是REX Prefix二进制是[0100 1100]
-
+>[4C]是REX Prefix二进制是[0100 1100]<br>
+>[8D]是Opcode 也就是lea指令<br>
+>[15]是ModR/M二进制是[0001 0101]<br>
+>[45 26 9F 00]为Offset，也就是[00 9F 26 45]
+>
+>REX Prefix的第2位和ModR/M[5:3]的reg联合指定寄存器即[1 010]也就是R10寄存器,SIB不使用则默认使用RIP<br>
+>目标绝对地址=RIP[下一条要执行的指令的64位地址]+Offset[00 9F 26 45]
 
 
 
@@ -352,16 +357,20 @@ beginning of this section for encoding data and limits.
 .text:000000014040EF00 swapgs                                  ; 切换GS使GS：0指向_KPCR
 .text:000000014040EF03 mov     gs:_KPCR.___u0.__s1.UserRsp, rsp
 .text:000000014040EF0C mov     rsp, gs:_KPCR.Prcb.RspBase      ; 切换到内核态
-.text:000000014040EF15 push    2Bh ; '+'                       ; 内核栈上构造Trap_Frame 从_KTRAP_FRAME.SegSs+0x188开始压栈
+.text:000000014040EF15 push    2Bh ; '+'                       ; 内核栈上构造Trap_Frame 大小是0x190 rsp指向栈顶0x190位置
+.text:000000014040EF15                                         ; 该指令等于rsp+0x8 从_KTRAP_FRAME.SegSs+0x188开始压栈
 .text:000000014040EF17 push    gs:_KPCR.___u0.__s1.UserRsp
-.text:000000014040EF1F push    r11                             ; R11 =RFLAGS (syscall)
-.text:000000014040EF21 push    33h ; '3'
-.text:000000014040EF23 push    rcx                             ; RCX=UserRip(syscall)
+.text:000000014040EF1F push    r11                             ; _KTRAP_FRAME.EFlags=R11 =RFLAGS (syscall)
+.text:000000014040EF21 push    33h ; '3'                       ;     USHORT SegCs;                                                           //0x170
+.text:000000014040EF21                                         ;     UCHAR Fill0;                                                            //0x172
+.text:000000014040EF21                                         ;     UCHAR Logging;                                                          //0x173
+.text:000000014040EF21                                         ;     USHORT Fill1[2];                                                        //0x174
+.text:000000014040EF23 push    rcx                             ; _KTRAP_FRAME.Rip=RCX=UserRip(syscall)
 .text:000000014040EF24 mov     rcx, r10                        ; R10=Rcx (Ntdll.dll)
 .text:000000014040EF27 sub     rsp, 8                          ; skip ExceptionFram and ErrorCode
 .text:000000014040EF2B push    rbp                             ; 保存 userRBP 到 _KTRAP_FRAME.Rbp(+0x158)
 .text:000000014040EF2C sub     rsp, 158h                       ; 提升栈顶指针到_KTRAP_FRAME顶部
-.text:000000014040EF33 lea     rbp, [rsp+190h+var_110]         ; RBP->_KTRAP_FRAME.Xmm1(0x80)
+.text:000000014040EF33 lea     rbp, [rsp+_KTRAP_FRAME._Xmm1.Low] ; RBP->_KTRAP_FRAME.Xmm1(0x80)
 .text:000000014040EF3B mov     [rbp+0C0h], rbx                 ; _KTRAP_FRAME.Rbx
 .text:000000014040EF42 mov     [rbp+0C8h], rdi                 ; _KTRAP_FRAME.Rdi
 .text:000000014040EF49 mov     [rbp+0D0h], rsi                 ; _KTRAP_FRAME.Rsi
@@ -430,5 +439,177 @@ beginning of this section for encoding data and limits.
 .text:000000014040F15F mov     word ptr [rbp+80h], 0           ; _KTRAP_FRAME.ExceptionFrame
 .text:000000014040F168 jz      loc_14040F23E                   ; _KTRAP_FRAME.RAX Trap_Frame取出用户态数据
 
+.......
+
+.text:000000014040F242 mov     rcx, [rbp-48h]                  ; _KTRAP_FRAME.RCX
+.text:000000014040F246 mov     rdx, [rbp-40h]                  ; _KTRAP_FRAME.RDX
+.text:000000014040F24A sti                                     ; 启用中断响应 syscall执行时候中断被关闭
+.text:000000014040F24A                                         ; CLI禁止中断发生
+.text:000000014040F24A                                         ; STI允许中断发生
+.text:000000014040F24B mov     [rbx+_KTHREAD.FirstArgument], rcx
+.text:000000014040F252 mov     [rbx+_KTHREAD.SystemCallNumber], eax
+.text:000000014040F258 nop     dword ptr [rax+rax+00000000h]
+.text:000000014040F258
+.text:000000014040F260
+.text:000000014040F260 KiSystemServiceStart:                   ; DATA XREF: KiServiceInternal+5A↑o
+.text:000000014040F260                                         ; .data:0000000140C00340↓o
+.text:000000014040F260 mov     [rbx+_KTHREAD.TrapFrame], rsp
+.text:000000014040F267 mov     edi, eax                        ; 需要调用的函数号
+.text:000000014040F269 shr     edi, 7                          ; 右移7位
+.text:000000014040F26C and     edi, 20h                        ; 取EAX[12] 函数地址表(ServiceOffsetTable)索引
+.text:000000014040F26F and     eax, 0FFFh                      ; 取EAX[11:0] 函数表索引
+.text:000000014040F26F
+.text:000000014040F274
+.text:000000014040F274 KiSystemServiceRepeat:                  ; CODE XREF: KiSystemCall64+B7A↓j
+.text:000000014040F274 lea     r10, KeServiceDescriptorTable   ; 非GUI线程使用 SSDT Offset
+.text:000000014040F27B lea     r11, KeServiceDescriptorTableShadow ; GUI线程使用 SSDTShadow Offset
+.text:000000014040F282 test    [rbx+_KTHREAD.ThreadFlags], 80h ; 获取ThreadFlags[7]的GuiThread位判断是否是Gui线程
+.text:000000014040F289 jz      short NotGuiThread
+.text:000000014040F289
+.text:000000014040F28B test    [rbx+_KTHREAD.ThreadFlags], 200000h ; ThreadFlags[21]的RestrictedGuiThread位 判断是否为受限制的GUI线程
+.text:000000014040F292 jz      short GuiThread
+.text:000000014040F292
+.text:000000014040F294 lea     r11, KeServiceDescriptorTableFilter ; 受限的GUI线程使用
+.text:000000014040F294
+.text:000000014040F29B
+.text:000000014040F29B GuiThread:                              ; CODE XREF: KiSystemCall64+392↑j
+.text:000000014040F29B mov     r10, r11
+.text:000000014040F29B
+.text:000000014040F29E
+.text:000000014040F29E NotGuiThread:                           ; CODE XREF: KiSystemCall64+389↑j
+.text:000000014040F29E cmp     eax, [r10+rdi+10h]              ; 函数索引是否小于SSDT表的表项数量
+.text:000000014040F2A3 jnb     IndexAboveTableSize
+.text:000000014040F2A3
+.text:000000014040F2A9 mov     r10, [r10+rdi]                  ; 获取SSDT表基址
+.text:000000014040F2AD movsxd  r11, dword ptr [r10+rax*4]      ; 取得SSDT表中相对应编号函数的Offset 每个项大小为DD
+.text:000000014040F2B1 mov     rax, r11                        ; 计算用Offset函数位置
+.text:000000014040F2B4 sar     r11, 4                          ; x>>n == x / 2^n 去除偏移当中的参数
+.text:000000014040F2B8 add     r10, r11                        ; 函数位置=SSDTBase+Offset
+.text:000000014040F2BB cmp     edi, 20h ; ' '                  ; 是否是GUI函数
+.text:000000014040F2BE jnz     short loc_14040F310
+
+
+......
+超出索引范围处理
+.text:000000014040FA41 IndexAboveTableSize:                    ; CODE XREF: KiSystemCall64+3A3↑j
+.text:000000014040FA41 cmp     edi, 20h ; ' '                  ; 是否调用GUI函数
+.text:000000014040FA44 jnz     short Error_Exit                ; 超过SSDT表范围的退出
+......
+
+.text:000000014040F310 Non_GuiExecuteFun:                      ; CODE XREF: KiSystemCall64+3BE↑j
+.text:000000014040F310                                         ; KiSystemCall64+3CF↑j
+.text:000000014040F310 and     eax, 0Fh                        ; 取出参数位[3:0]
+.text:000000014040F313 jz      KiSystemServiceCopyEnd          ; 没有参数位则跳转
+.text:000000014040F313
+.text:000000014040F319 shl     eax, 3                          ; 逻辑左移指令 a << b = a * (2^b)
+.text:000000014040F31C lea     rsp, [rsp-70h]                  ; 分配新的栈空间用来存放从用户栈复制来的参数
+.text:000000014040F321 lea     rdi, [rsp+100h+var_E8]
+.text:000000014040F326 mov     rsi, [rbp+(_KTRAP_FRAME._Rsp-80h)] ; 用户态栈顶指针
+.text:000000014040F32D lea     rsi, [rsi+20h]                  ; 忽略寄存器参数预留的栈空间(rsi+0x20)
+.text:000000014040F331 test    byte ptr [rbp+(_KTRAP_FRAME.SegCs-80h)], 1 ; BYTE SegCs[0] == 1 ?
+.text:000000014040F331                                         ; 根据SysCall前是否为用户模式
+.text:000000014040F331                                         ; 决定是否探测用户地址空间可用性
+.text:000000014040F338 jz      short loc_14040F350
+.text:000000014040F338
+.text:000000014040F33A cmp     rsi, cs:MmUserProbeAddress
+.text:000000014040F341 cmovnb  rsi, cs:MmUserProbeAddress
+.text:000000014040F349 nop     dword ptr [rax+00000000h]
+.text:000000014040F349
+.text:000000014040F350
+.text:000000014040F350 loc_14040F350:                          ; CODE XREF: KiSystemCall64+438↑j
+.text:000000014040F350 lea     r11, KiSystemServiceCopyEnd     ; 复制函数结束地址
+.text:000000014040F357 sub     r11, rax                        ; 根据参数算出从函数的何处开始执行
+.text:000000014040F35A jmp     r11                             ; 跳转到函数执行
+.text:000000014040F35A
+.text:000000014040F35A ; ---------------------------------------------------------------------------
+.text:000000014040F35D align 20h
+.text:000000014040F360
+.text:000000014040F360 KiSystemServiceCopyStart:               ; DATA XREF: KiSystemServiceHandler+1A↑o
+.text:000000014040F360 mov     rax, [rsi+70h]                  ; 执行复制 每8字节复制需要两个指令
+.text:000000014040F364 mov     [rdi+70h], rax                  ; 用rax做中转从rsi取出存入rdi
+.text:000000014040F368 mov     rax, [rsi+68h]
+.text:000000014040F36C mov     [rdi+68h], rax
+.text:000000014040F370 mov     rax, [rsi+60h]
+.text:000000014040F374 mov     [rdi+60h], rax
+.text:000000014040F378 mov     rax, [rsi+58h]
+.text:000000014040F37C mov     [rdi+58h], rax
+.text:000000014040F380 mov     rax, [rsi+50h]
+.text:000000014040F384 mov     [rdi+50h], rax
+.text:000000014040F388 mov     rax, [rsi+48h]
+.text:000000014040F38C mov     [rdi+48h], rax
+.text:000000014040F390 mov     rax, [rsi+40h]
+.text:000000014040F394 mov     [rdi+40h], rax
+.text:000000014040F398 mov     rax, [rsi+38h]
+.text:000000014040F39C mov     [rdi+38h], rax
+.text:000000014040F3A0 mov     rax, [rsi+30h]
+.text:000000014040F3A4 mov     [rdi+30h], rax
+.text:000000014040F3A8 mov     rax, [rsi+28h]
+.text:000000014040F3AC mov     [rdi+28h], rax
+.text:000000014040F3B0 mov     rax, [rsi+20h]
+.text:000000014040F3B4 mov     [rdi+20h], rax
+.text:000000014040F3B8 mov     rax, [rsi+18h]
+.text:000000014040F3BC mov     [rdi+18h], rax
+.text:000000014040F3C0 mov     rax, [rsi+10h]
+.text:000000014040F3C4 mov     [rdi+10h], rax
+.text:000000014040F3C8 mov     rax, [rsi+8]
+.text:000000014040F3CC mov     [rdi+8], rax
+.text:000000014040F3CC
+.text:000000014040F3D0
+.text:000000014040F3D0 KiSystemServiceCopyEnd:                 ; CODE XREF: KiSystemCall64+413↑j
+.text:000000014040F3D0                                         ; DATA XREF: KiSystemServiceHandler+27↑o
+.text:000000014040F3D0                                         ; KiSystemCall64:loc_14040F350↑o
+.text:000000014040F3D0 test    cs:KiDynamicTraceMask, 1
+.text:000000014040F3DA jnz     loc_14040FADF
+.text:000000014040F3E0 test    dword ptr cs:PerfGlobalGroupMask+8, 40h
+.text:000000014040F3EA jnz     loc_14040FB53
+......
+
+.text:000000014040FB53                               loc_14040FB53:                          ; CODE XREF: KiSystemCall64+4EA↑j
+.text:000000014040FB53 48 83 EC 50                   sub     rsp, 50h
+.text:000000014040FB57 48 89 4C 24 20                mov     [rsp+20h], rcx
+.text:000000014040FB5C 48 89 54 24 28                mov     [rsp+28h], rdx
+.text:000000014040FB61 4C 89 44 24 30                mov     [rsp+30h], r8
+.text:000000014040FB66 4C 89 4C 24 38                mov     [rsp+38h], r9
+.text:000000014040FB6B 4C 89 54 24 40                mov     [rsp+40h], r10
+.text:000000014040FB70 49 8B CA                      mov     rcx, r10
+.text:000000014040FB73 E8 08 8C 19 00                call    PerfInfoLogSysCallEntry         ; 日志记录开始
+.text:000000014040FB73
+.text:000000014040FB78 48 8B 4C 24 20                mov     rcx, [rsp+20h]
+.text:000000014040FB7D 48 8B 54 24 28                mov     rdx, [rsp+28h]
+.text:000000014040FB82 4C 8B 44 24 30                mov     r8, [rsp+30h]
+.text:000000014040FB87 4C 8B 4C 24 38                mov     r9, [rsp+38h]
+.text:000000014040FB8C 4C 8B 54 24 40                mov     r10, [rsp+40h]
+.text:000000014040FB91 48 83 C4 50                   add     rsp, 50h
+.text:000000014040FB95 49 8B C2                      mov     rax, r10
+.text:000000014040FB98 FF D0                         call    rax                             ; 调用系统例程
+.text:000000014040FB98
+.text:000000014040FB9A 0F 1F 00                      nop     dword ptr [rax]
+.text:000000014040FB9D 48 8B C8                      mov     rcx, rax
+.text:000000014040FBA0 E8 7B 8C 19 00                call    PerfInfoLogSysCallExit          ; 记录日志结束
+.text:000000014040FBA0
+.text:000000014040FBA5 E9 4E F8 FF FF                jmp     loc_14040F3F8
+
+......
+
+.text:000000014040F72B loc_14040F72B:                          ; CODE XREF: KiSystemCall64+700↑j
+.text:000000014040F72B mov     rax, [rbp-50h]                  ; 设置返回值
+.text:000000014040F72F mov     r8, [rbp+100h]                  ; _KTRAP_FRAME.RSP
+.text:000000014040F736 mov     r9, [rbp+0D8h]                  ; _KTRAP_FRAME.RBP
+.text:000000014040F73D xor     edx, edx
+.text:000000014040F73F pxor    xmm0, xmm0
+.text:000000014040F743 pxor    xmm1, xmm1
+.text:000000014040F747 pxor    xmm2, xmm2
+.text:000000014040F74B pxor    xmm3, xmm3
+.text:000000014040F74F pxor    xmm4, xmm4
+.text:000000014040F753 pxor    xmm5, xmm5
+.text:000000014040F757 mov     rcx, [rbp+0E8h]                 ; _KTRAP_FRAME.RIP
+.text:000000014040F75E mov     r11, [rbp+0F8h]                 ; _KTRAP_FRAME.RFLAGS
+.text:000000014040F765 test    cs:KiKvaShadow, 1               ; 是否开启了内核隔离(KPTI)
+.text:000000014040F76C jnz     KiKernelSysretExit              ; 若开启则将内核页表切换为用户页表再返回
+.text:000000014040F76C
+.text:000000014040F772 mov     rbp, r9                         ; 恢复寄存器Context
+.text:000000014040F775 mov     rsp, r8                         ; 切换到用户栈
+.text:000000014040F778 swapgs
+.text:000000014040F77B sysret
 ~~~~
 
