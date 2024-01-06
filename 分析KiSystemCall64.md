@@ -591,6 +591,45 @@ beginning of this section for encoding data and limits.
 
 ......
 
+.text:000000014040F456 mov     [rbp-50h], rax
+.text:000000014040F45A xor     eax, eax
+.text:000000014040F45C mov     [rbp-48h], rax
+.text:000000014040F460 mov     [rbp-40h], rax
+.text:000000014040F464 mov     [rbp-38h], rax
+.text:000000014040F468 mov     [rbp-30h], rax
+.text:000000014040F46C mov     [rbp-28h], rax
+.text:000000014040F470 mov     [rbp-20h], rax
+.text:000000014040F474 pxor    xmm0, xmm0
+.text:000000014040F478 movaps  xmmword ptr [rbp-10h], xmm0
+.text:000000014040F47C movaps  xmmword ptr [rbp+0], xmm0
+.text:000000014040F480 movaps  xmmword ptr [rbp+10h], xmm0
+.text:000000014040F484 movaps  xmmword ptr [rbp+20h], xmm0
+.text:000000014040F488 movaps  xmmword ptr [rbp+30h], xmm0
+.text:000000014040F48C movaps  xmmword ptr [rbp+40h], xmm0
+.text:000000014040F490 mov     ecx, 1
+.text:000000014040F495 mov     cr8, rcx
+.text:000000014040F499 sti
+.text:000000014040F49A call    KiInitiateUserApc
+.text:000000014040F49A
+.text:000000014040F49F cli
+.text:000000014040F4A0 mov     ecx, 0
+.text:000000014040F4A5 mov     cr8, rcx
+.text:000000014040F4A9 mov     rax, [rbp-50h]
+.text:000000014040F4AD jmp     short loc_14040F444
+.text:000000014040F4AD
+.text:000000014040F4AF ; ---------------------------------------------------------------------------
+.text:000000014040F4AF
+.text:000000014040F4AF loc_14040F4AF:                          ; CODE XREF: KiSystemCall64+554↑j
+.text:000000014040F4AF test    byte ptr gs:27Eh, 2
+.text:000000014040F4B8 jz      short loc_14040F4C9
+.text:000000014040F4B8
+.text:000000014040F4BA mov     [rbp-50h], rax                  ; 更改_KTRAP_FRAME.Rax使用户态取得R0函数的返回值
+.text:000000014040F4BE xor     ecx, ecx
+.text:000000014040F4C0 call    KiUpdateStibpPairing
+.text:000000014040F4C0
+.text:000000014040F4C5 mov     rax, [rbp-50h]
+......
+
 .text:000000014040F72B loc_14040F72B:                          ; CODE XREF: KiSystemCall64+700↑j
 .text:000000014040F72B mov     rax, [rbp-50h]                  ; 设置返回值
 .text:000000014040F72F mov     r8, [rbp+100h]                  ; _KTRAP_FRAME.RSP
