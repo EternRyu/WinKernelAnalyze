@@ -24,7 +24,7 @@ KUSER_SHARED_DATA.SystemCall对应的值就是ntdll!KiInitSystemCall的地址。
 ~~~~
 
 
--x86的 sysenter  (sysenter/sysexit 一对配套指令用于快速在R3和R0之间转换的指令）
+-x86的 sysenter  (sysenter/sysexit 一对配套指令用于快速在R3和R0之间转换的指令)
 
 -x64的 syscall   (syscall/sysret 一对配套指令用于快速在R3和R0之间转换的指令)
 
@@ -64,7 +64,14 @@ CS.D := 0; (* Required if CS.L = 1 *)
 CS.G := 1; (* 4-KByte granularity *)
 ~~~~
 
+IA32_STAR（0xC0000081）：Ring 0和Ring 3段基址，以及SYSCALL的EIP。<br>
+在较低的32位中存储的是SYSCALL的EIP，在第32-47位存储内核段基址，在第48-63为存储用户段基址。<br>
+IA32_CSTAR（0xC0000083）：兼容模式下，SYSCALL的内核RIP相对寻址。<br>
+IA32_LSTAR（0xC0000082）：长模式（Long Mode，即64位）下，SYSCALL的内核RIP相对寻址。
+
 #### Windbg读取的 IA32_FMASK[C0000084H] MSR寄存器
+
+
 ~~~~
 [来源Intel Vol. 4 2-61; Table 2-2. IA-32 Architectural MSRs (Contd.)]
 
@@ -114,7 +121,11 @@ RIP := ECX;
 FI;
 RFLAGS := (R11 & 3C7FD7H) | 2; (* Clear RF, VM, reserved bits; set bit 1 *)
 
-恢复RIP和RFLAGS寄存器用固定值填写CS、SS及其描述符
+合法性检测
+rip = ecx/ecx
+根据R11的值对RFLAGS赋值，且RF,VM，部分reserved位复位。
+CS.Selector = IA32_STAR[63:48] + 16/IA32_STAR[63:48]
+修正CS,SS,CPL
 ~~~~
 
 ==============================================================
