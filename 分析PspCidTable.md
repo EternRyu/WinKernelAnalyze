@@ -144,7 +144,7 @@ struct _HANDLE_TABLE
 
 一个表有4096\sizeof(_HANDLE_TABLE_ENTRY)=4096\16=256个表项
 
-按照windows 句柄号是4的整数倍 方式管理进程的话,那么一个表内只能存储 256 / 4 = 40个进程
+按照windows ```句柄号是4的整数倍```方式管理进程的话,那么一个表内只能存储 256 / 4 = 40个进程
 
 一级表根据Pid或Handle获得指针的计算得到表项
 ```
@@ -198,8 +198,8 @@ union _HANDLE_TABLE_ENTRY
 ```
 and     rdx, 0FFFFFFFFFFFFFFFCh ;(pid/Handle) & 0FFFFFFFFFFFFFFFCh
 mov     rax, rdx
-shr     rax, 0Ah
-and     edx, 3FFh
+shr     rax, 0Ah            ;右移10bit获得Mid.index
+and     edx, 3FFh           ;计算句柄项的Low.index时需要与上0x3ff
 mov     rax, [r8+rax*8-1]
 lea     rax, [rax+rdx*4]
 ```
@@ -266,10 +266,11 @@ lea     rax, [rax+rdx*4]
 ```
 
 ## _HANDLE_TABLE_ENTRY
-句柄表项中并不直接映射对象头，而是间接进行映射
-_HANDLE_TABLE_ENTRY->infoTable 是内核对象 如EPROCESS ETHREAT
 
-该结构的计算方式在win10 22h2下  PspReferenceCidTableEntry函数当中为
+_HANDLE_TABLE_ENTRY->infoTable 是内核对象 如EPROCESS ETHREAT
+句柄表项infoTable的不能直接读取（不直接映射对象头，而是间接进行映射？）
+
+该项的的计算方式在win10 22h2下  PspReferenceCidTableEntry函数当中为
 ```
 mov     rdi, [rsi]
 sar     rdi, 10h
@@ -278,6 +279,47 @@ and     rdi, 0FFFFFFFFFFFFFFF0h
 即
 ```
 
-拿上面的win10下的句柄对象,计算得到的间接映射后的的EPROCESS地址举例
+拿上面的win10下的句柄对象,计算得到的EPROCESS地址举例
 只需要对象结构 -sizeof(OBJECT_HEADER)结构大小
 即-0x30看到实际的OBJECT_HEADER结构
+```
+_OBJECT_HEADER与Body并不是整个object的全部，实际上在object header前面还有optional headers与pool header，一个完全的windows object应该是这样的：
+
+_POOL_HEADER
+_OBJECT_QUOTA_CHARGES (optional)
+_OBJECT_HANDLE_DB (optional)
+_OBJECT_NAME (optional)
+_OBJECT_CREATOR_INFO (optional)
+_OBJECT_HEADER
+body
+```
+### _OBJECT_HEADER的TypeIndex字段
+
+>_OBJECT_TYPE
+在win7之前的windows版本中存在一个Type字段其包含了一个指针指向一个_OBJECT_TYPE结构体，在新版本中，这个字段变为了TypeIndex，其包含了一个全局数组nt!ObTypeIndexTable的索引，而这个数组中存着不同类型的结构体的指针
+
+在windows10中，处于安全考虑，TypeIndex字段被使用异或加密,
+通过逆向未导出的API  ObGetObjectType() 来进行分析
+```
+lea     rax, [rcx-30h]
+movzx   ecx, byte ptr [rcx-18h]
+shr     rax, 8
+movzx   eax, al
+xor     rax, rcx
+movzx   ecx, byte ptr cs:ObHeaderCookie
+xor     rax, rcx
+lea     rcx, ObTypeIndexTable
+mov     rax, [rcx+rax*8]
+
+即
+ObTypeIndexTable[TypeIndex ^ ((OBJECT_HEADERADDR >> 8) & 0XFF ) ^ ObHeaderCookie];
+```
+如EPROCESS对象的TypeIndex为7
+
+可以通过nt!ObTypeIndexTable[0x7]来获取指向其_OBJECT_TYPE的指针
+
+>InfoMask
+在_OBJECT_HEADER->InfoMask中使用掩码的方式来表示哪些可选头存在
+内核中存在一个数组ObpInfoMaskToOffset，我们可以根据InfoMask我们可以计算出一个数值作为数组的索引，从而获取我们想要的optional header距离object header的偏移
+
+Offset = ObpInfoMaskToOffset[OBJECT_HEADER->InfoMask & (DesiredHeaderBit	(DesiredHeaderBit-1))]
