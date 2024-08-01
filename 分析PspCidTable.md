@@ -265,3 +265,19 @@ mov     rax, [rax+rcx*8]
 lea     rax, [rax+rdx*4]
 ```
 
+## _HANDLE_TABLE_ENTRY
+句柄表项中并不直接映射对象头，而是间接进行映射
+_HANDLE_TABLE_ENTRY->infoTable 是内核对象 如EPROCESS ETHREAT
+
+该结构的计算方式在win10 22h2下  PspReferenceCidTableEntry函数当中为
+```
+mov     rdi, [rsi]
+sar     rdi, 10h
+and     rdi, 0FFFFFFFFFFFFFFF0h
+((infoTable >> 0x10) & 0xFFFFFFFFFFFFFFF0ui64)
+即
+```
+
+拿上面的win10下的句柄对象,计算得到的间接映射后的的EPROCESS地址举例
+只需要对象结构 -sizeof(OBJECT_HEADER)结构大小
+即-0x30看到实际的OBJECT_HEADER结构
