@@ -275,8 +275,9 @@ _HANDLE_TABLE_ENTRY->infoTable 是内核对象 如EPROCESS ETHREAT
 mov     rdi, [rsi]
 sar     rdi, 10h
 and     rdi, 0FFFFFFFFFFFFFFF0h
-((infoTable >> 0x10) & 0xFFFFFFFFFFFFFFF0ui64)
+
 即
+((infoTable >> 0x10) & 0xFFFFFFFFFFFFFFF0ui64)
 ```
 
 拿上面的win10下的句柄对象,计算得到的EPROCESS地址举例
