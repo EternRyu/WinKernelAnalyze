@@ -95,29 +95,29 @@ TableCode就是全局句柄表的地址
 //0x80 bytes (sizeof)
 struct _HANDLE_TABLE
 {
-    ULONG NextHandleNeedingPool;                                            //0x0
-    LONG ExtraInfoPages;                                                    //0x4
-    volatile ULONGLONG TableCode;                                           //0x8
-    struct _EPROCESS* QuotaProcess;                                         //0x10
-    struct _LIST_ENTRY HandleTableList;                                     //0x18
-    ULONG UniqueProcessId;                                                  //0x28
+    ULONG NextHandleNeedingPool;      //下一次句柄表扩展的起始句柄索引         //0x0
+    LONG ExtraInfoPages;               //审计信息所占用的页面数量            //0x4
+    volatile ULONGLONG TableCode;      //指向句柄表的结构                     //0x8
+    struct _EPROCESS* QuotaProcess;   //句柄表的内存资源记录在此进程中        //0x10
+    struct _LIST_ENTRY HandleTableList; //所有的句柄表形成一个链表(这个成员域用来指向下一个句柄表节点的)，链表头为全局变量HandleTableListHead  //0x18
+    ULONG UniqueProcessId; //创建进程的ID，用于回调函数                       //0x28
     union
     {
-        ULONG Flags;                                                        //0x2c
+        ULONG Flags;       //标志域                                         //0x2c
         struct
         {
-            UCHAR StrictFIFO:1;                                             //0x2c
+            UCHAR StrictFIFO:1; //是否使用FIFO风格的重用，即先释放还是先重用  //0x2c
             UCHAR EnableHandleExceptions:1;                                 //0x2c
             UCHAR Rundown:1;                                                //0x2c
             UCHAR Duplicated:1;                                             //0x2c
             UCHAR RaiseUMExceptionOnInvalidHandleClose:1;                   //0x2c
         };
     };
-    struct _EX_PUSH_LOCK HandleContentionEvent;                             //0x30
-    struct _EX_PUSH_LOCK HandleTableLock;                                   //0x38
+    struct _EX_PUSH_LOCK HandleContentionEvent;//若在访问句柄时发生竞争，则在此推锁上阻塞等待 //0x30
+    struct _EX_PUSH_LOCK HandleTableLock;   //句柄表锁 仅在句柄表扩展时使     //0x38
     union
     {
-        struct _HANDLE_TABLE_FREE_LIST FreeLists[1];                        //0x40
+        struct _HANDLE_TABLE_FREE_LIST FreeLists[1];//空闲链表表头的句柄索引 //0x40
         struct
         {
             UCHAR ActualEntry[32];                                          //0x40
