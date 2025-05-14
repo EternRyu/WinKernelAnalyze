@@ -197,7 +197,7 @@ struct _LIST_ENTRY InInitializationOrderModuleList;  模块初始化时的顺序
 使用该结构解析时需要根据所用的链在的偏移位置进行一定的位移</br>
 以达到回到_LDR_DATA_TABLE_ENTRY 结构base的地址正确解析</br>
 例如通过InMemoryOrderModuleList链查找</br>
-那面查到的偏移后需要进行-0x10的偏移回到头部</br>
+查到的偏移后需要进行-0x10的偏移回到头部</br>
 `dt _LDR_DATA_TABLE_ENTRY 0x1d28f962d50-0x10`</br>
 
 <details> 
